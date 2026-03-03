@@ -1,0 +1,65 @@
+import arcade
+
+TILE_SIZE = 64
+
+LEVEL = [
+    "###########",
+    "#.........#",
+    "#.........#",
+    "#.........#",
+    "#P....G...#",
+    "###########"
+]
+
+WALL_COLOR = arcade.color.BLUE
+COIN_COLOR = arcade.color.YELLOW
+PLAYER_COLOR = arcade.color.ORANGE
+GHOST_COLOR = arcade.color.RED
+
+
+class PacmanGame(arcade.Window):
+
+    def __init__(self):
+        self.rows = len(LEVEL)
+        self.cols = len(LEVEL[0])
+
+        super().__init__(
+            self.cols * TILE_SIZE,
+            self.rows * TILE_SIZE,
+            "Pacman Grid Clean"
+        )
+
+        arcade.set_background_color(arcade.color.BLACK)
+
+    def on_draw(self):
+        self.clear()
+
+        for row in range(self.rows):
+            for col in range(self.cols):
+                symbol = LEVEL[row][col]
+
+                # Левая нижняя точка клетки
+                x = col * TILE_SIZE
+                y = row * TILE_SIZE
+
+                color = None
+
+                if symbol == "#":
+                    color = WALL_COLOR
+                elif symbol == ".":
+                    color = COIN_COLOR
+                elif symbol == "P":
+                    color = PLAYER_COLOR
+                elif symbol == "G":
+                    color = GHOST_COLOR
+
+                if color:
+                    arcade.draw_rect_filled(
+                        arcade.XYWH(x, y, TILE_SIZE, TILE_SIZE),
+                        color
+                    )
+
+
+if __name__ == "__main__":
+    PacmanGame()
+    arcade.run()
