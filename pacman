@@ -1,14 +1,18 @@
 import arcade
 import random
 
+from arcade.experimental.shapes_perf import TITLE
+
 TILE_SIZE = 64
 
 LEVEL = [
-    "###########",
-    "#P....G...#",
-    "#.........#",
-    "#.........#",
-    "###########",
+    "################",
+    "#P.......#.....#",
+    "#..............#",
+    "#...#....#.....#",
+    "#..............#",
+    "#........#....G#",
+    "################",
 ]
 
 WALL_COLOR = arcade.color.BLUE
@@ -21,7 +25,7 @@ class Character:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.dx = 0 #התקדמות
+        self.dx = 0
         self.dy = 0
 
 
@@ -30,7 +34,7 @@ class Player(Character):
         super().__init__(x, y)
         self.score = 0
         self.lives = 3
-        self.next_dx = 0 #כיוונים
+        self.next_dx = 0
         self.next_dy = 0
 
 
@@ -45,16 +49,15 @@ class Enemy(Character):
 
 class Wall:
     def __init__(self, x, y):
-        self.x = x    #קורדינטות הקיר
+        self.x = x
         self.y = y
 
 
 class Coin:
     def __init__(self, x, y):
-        self.x = x     #קורדינטות המטבעות
+        self.x = x
         self.y = y
 
-#_______________________________________________________________________________________________________________________
 
 class PacmanGame(arcade.Window):
 
@@ -64,18 +67,18 @@ class PacmanGame(arcade.Window):
         super().__init__(self.cols * TILE_SIZE, self.rows * TILE_SIZE, "Pacman Grid Movement")
         arcade.set_background_color(arcade.color.BLACK)
 
-        self.player = None   #השחקן הוא אוביקט יחיד
-        self.ghosts = []   #היריב בתוך רשימה מפני שיכולים להיות כמה
+        self.player = None
+        self.ghosts = []
         self.walls = []
         self.coins = []
 
         self.player_timer = 0
         self.ghost_timer = 0
-        self.move_delay = 0.25   #הזמן שעובר עד שהשחקן והרוח יכולים לזוז
+        self.move_delay = 0.25
 
-        self.setup()   #בשביל לאתחל את השלב
+        self.setup()
 
-    def setup(self):                                         #מגדיר כל איבר ברשימה
+    def setup(self):
         for row in range(self.rows):
             for col in range(self.cols):
                 symbol = LEVEL[row][col]
@@ -93,15 +96,15 @@ class PacmanGame(arcade.Window):
     def on_draw(self):
         self.clear()
         for wall in self.walls:
-            arcade.draw_rect_filled(arcade.XYWH(wall.x * TILE_SIZE, wall.y * TILE_SIZE, TILE_SIZE, TILE_SIZE), WALL_COLOR)   #צייר קיר המשתמש בפונקציית ציור מלבן
+            arcade.draw_rect_filled(arcade.XYWH(wall.x * TILE_SIZE + TILE_SIZE/2, wall.y * TILE_SIZE + TILE_SIZE/2, TILE_SIZE, TILE_SIZE), WALL_COLOR)
         for coin in self.coins:
-            arcade.draw_circle_filled(coin.x * TILE_SIZE + TILE_SIZE / 2, coin.y * TILE_SIZE + TILE_SIZE / 2, 8, COIN_COLOR)  #צייר מטבע המשתמש בציור עיגול
+            arcade.draw_circle_filled(coin.x * TILE_SIZE + TILE_SIZE / 2, coin.y * TILE_SIZE + TILE_SIZE / 2, 8, COIN_COLOR)
         for ghost in self.ghosts:
-            arcade.draw_circle_filled(ghost.x * TILE_SIZE + TILE_SIZE / 2, ghost.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE // 2 - 10, GHOST_COLOR)  #צייר יריב (רוח) באמצעות עיגול
-        arcade.draw_circle_filled(self.player.x * TILE_SIZE + TILE_SIZE / 2, self.player.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE // 2 - 10, PLAYER_COLOR) #צייר פאקמן-עיגול
+            arcade.draw_circle_filled(ghost.x * TILE_SIZE + TILE_SIZE / 2, ghost.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE // 2 - 10, GHOST_COLOR)
+        arcade.draw_circle_filled(self.player.x * TILE_SIZE + TILE_SIZE / 2, self.player.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE // 2 - 10, PLAYER_COLOR)
         arcade.draw_text(f"Score: {self.player.score}  Lives: {self.player.lives}", 10, 10, arcade.color.WHITE, 18)
 
-    def on_key_press(self, key, modifiers):         #שינוי בכיוון תזוזת פאקמן בלחיצה על מקשי התזוזה או על החצים
+    def on_key_press(self, key, modifiers):
         if key in (arcade.key.UP, arcade.key.W):
             self.player.next_dx = 0
             self.player.next_dy = 1
@@ -115,74 +118,71 @@ class PacmanGame(arcade.Window):
             self.player.next_dx = 1
             self.player.next_dy = 0
 
-    def is_wall(self, x, y):         #פונקציה הבודקת אם יש קיר באותן הקורדינטות
-        for w in self.walls:
-            if w.x == x and w.y == y:
-                return True
-        return False
+    def is_wall(self, x, y):
+        return any(w.x == x and w.y == y for w in self.walls)
 
     def move_character(self, character):
 
-        if isinstance(character, Player):              #isinstance בודקת האם יש ירושה בין המחלקות
-            if (character.next_dx != 0 or character.next_dy != 0):        #  אם יש ירושה אז התזוזה הפוטנציאלית גדלה
+        if isinstance(character, Player):
+            if (character.next_dx != 0 or character.next_dy != 0):
                 next_x = character.x + character.next_dx
                 next_y = character.y + character.next_dy
 
-                if not self.is_wall(next_x, next_y):    #בודק אם התזוזה הבאה לא מתנגשת בקיר, אם לא אז שינוי הכיוון מקבל איפשרות להתקיים
+                if not self.is_wall(next_x, next_y):
                     character.dx = character.next_dx
                     character.dy = character.next_dy
 
         new_x = character.x + character.dx
         new_y = character.y + character.dy
 
-        if not self.is_wall(new_x, new_y):             # בודק אם התזוזה הבאה לא מתנגשת בקיר, אם לא אז התזוזה הפוטנציאלית ממקודם מתממשת
+        if not self.is_wall(new_x, new_y):
             character.x = new_x
             character.y = new_y
 
         else:
-            character.dx = 0               #אם לא אז אין תזוזה
+            character.dx = 0
             character.dy = 0
 
     def on_update(self, delta_time):
-        self.player_timer += delta_time    #הוספת זמן לזמן הקצוב של תזוזת הדמויות
+        self.player_timer += delta_time
         self.ghost_timer += delta_time
 
 
-        if self.player_timer >= self.move_delay:       #איפוס זמן התזוזה כאשר הדמות עוברת את הזמן הקצוב (0.25 שניות) וזזה
+        if self.player_timer >= self.move_delay:
             self.player_timer = 0
-            self.move_character(self.player)      #הזזת פאקמן
+            self.move_character(self.player)
 
 
             for coin in self.coins[:]:
-                if coin.x == self.player.x and coin.y == self.player.y:    #אם קורדינטות השחקן שוות לקורדינטות המטבע, המטבע יעלם מהמפה (רשימת המטבעות) ונקודה תתווסף לשחקן
+                if coin.x == self.player.x and coin.y == self.player.y:
                     self.coins.remove(coin)
                     self.player.score += 1
 
 
-        if self.ghost_timer >= self.move_delay:                # איפוס זמן התזוזה כאשר הרוח עוברת את הזמן הקצוב (0.25 שניות) וזזה
+        if self.ghost_timer >= self.move_delay:
             self.ghost_timer = 0
             for ghost in self.ghosts:
-                if random.random() < 0.3 or self.is_wall(ghost.x + ghost.dx, ghost.y + ghost.dy):    #סיכוי של 30% לשנות כיוון
+                if random.random() < 0.3 or self.is_wall(ghost.x + ghost.dx, ghost.y + ghost.dy):
                     ghost.pick_new_direction()
-                self.move_character(ghost)       #תזוזה בכיוון הקיים
+                self.move_character(ghost)
 
 
-                if ghost.x == self.player.x and ghost.y == self.player.y:     #אם קורדינטות הרוח שוות לקורדינטות של פאקמן, השחקן יאבד "נשמה"
+                if ghost.x == self.player.x and ghost.y == self.player.y:
                     self.player.lives -= 1
                     print("Caught by ghost! Lives:", self.player.lives)
-                    self.player.x, self.player.y = 1, 1                # החזרת השחקן לקורדינטות ההתחלה ואיתחול של שינויי הכיוון
+                    self.player.x, self.player.y = 1, 1
                     self.player.dx = 0
                     self.player.dy = 0
 
 
-        if self.player.lives <= 0:        #סיום המשחק אם נגמרו לפאקמן החיים (פחות מ-3) - הפסד
+        if self.player.lives <= 0:
             print("GAME OVER")
             arcade.close_window()
-        if not self.coins:                 # סיום המשחק אם פאקמן אסף את כל המטבעות - ניצחון
+        if not self.coins:
             print("YOU WIN")
             arcade.close_window()
 
 
-if __name__ == "__main__":       #הרצת המשחק 
+if __name__ == "__main__":
     game = PacmanGame()
     arcade.run()
